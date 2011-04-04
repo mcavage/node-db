@@ -1,0 +1,78 @@
+#!/usr/bin/env node
+// -*- mode: js -*-
+var exec  = require('child_process').exec;
+var nopt = require('nopt');
+var path = require('path');
+
+var Db = require('db');
+
+var opts = {
+  "encrypt": String,
+  "force": Boolean,
+  "help": Boolean
+};
+
+var shortOpts = {
+  "e": ["--encrypt"],
+  "f": ["--force"],
+  "h": ["--help"]
+};
+
+var error = function(msg) {
+  if (msg) console.error('ERROR: ' + msg);
+}
+
+var usage = function(code, msg) {
+  error(msg);
+  console.log('usage: ' + path.basename(process.argv[1]) +
+	      '[-fh]  db_location');
+  process.exit(code);
+};
+
+var parsed = nopt(opts, shortOpts, process.argv, 2);
+
+if (parsed.help) usage(0);
+if (parsed.argv.remain.length < 1) usage(1, 'db_location required');
+
+if (!path.existsSync(parsed.argv.remain[0])) {
+  error(parsed.argv.remain[0] + ' does not exist');
+  process.exit(1);
+}
+
+var dbOpts = {location: parsed.argv.remain[0]};
+if (parsed.encrypt) dbOpts.encrypt = parsed.encrypt;
+var db = new Db(dbOpts);
+
+var force = false;
+if (parsed.force) force = parsed.force;
+
+try {
+  db.openSync();
+  db.closeSync();
+} catch(e) {
+  console.log(e.name + ': ' + e.message);
+  process.exit(1);
+}
+
+var destroy = function() {
+  exec("rm -fr " + parsed.argv.remain[0], function(err, stdout, stderr) {
+    process.exit(0);
+  });
+}
+
+if (!force) {
+  console.log('Are you sure you want to destroy ' +
+	      path.basename(parsed.argv.remain[0]) + '? (y/n)');
+  process.stdin.resume();
+  process.stdin.setEncoding('utf8');
+  process.stdin.on('data', function(chunk) {
+    chunk = chunk.replace(/^\s*/, '').replace(/\s*$/, '');
+    if (chunk === 'Y' || chunk === 'y') {
+      destroy();
+    } else {
+      process.exit(0);
+    }
+  });
+} else {
+  destroy();
+}

@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+// -*- mode: js -*-
+var fs = require('fs');
+var nopt = require('nopt');
+var path = require('path');
+
+var Db = require('db');
+
+var opts = {
+  "durable": Boolean,
+  "encrypt": String,
+  "help": Boolean
+};
+
+var shortOpts = {
+  "d": ["--durable"],
+  "e": ["--encrypt"],
+  "h": ["--help"]
+};
+
+var error = function(msg) {
+  if (msg) console.error('ERROR: ' + msg);
+}
+
+var usage = function(code, msg) {
+  error(msg);
+  console.log('usage: ' + path.basename(process.argv[1]) +
+	      '[-hd] [-e password] db_location');
+  process.exit(code);
+};
+
+var parsed = nopt(opts, shortOpts, process.argv, 2);
+
+if (parsed.help) usage(0);
+if (parsed.argv.remain.length < 1) usage(1, 'db_location required');
+
+var location = parsed.argv.remain[0];
+
+if (!path.existsSync(path.dirname(location))) {
+  error(path.dirname(location) + ' does not exist');
+  process.exit(1);
+}
+
+if (path.existsSync(location)) {
+  error(location + ' already exists');
+  process.exit(1);
+}
+
+var dbOpts = {location: location};
+
+if (parsed.durable !== undefined) dbOpts.durable = parsed.durable;
+if (parsed.encrypt !== undefined) dbOpts.encrypt = parsed.encrypt;
+var db = new Db(dbOpts);
+
+try {
+  fs.mkdirSync(location, 0750);
+  db.openSync();
+  db.closeSync();
+} catch(e) {
+  console.log(e.name + ': ' + e.message);
+  process.exit(1);
+}

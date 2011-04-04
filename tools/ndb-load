@@ -1,0 +1,79 @@
+#!/usr/bin/env node
+// -*- mode: js -*-
+var fs = require('fs');
+var nopt = require('nopt');
+var path = require('path');
+
+var Db = require('db');
+
+var opts = {
+  "database": String,
+  "encrypt": String,
+  "help": Boolean
+};
+
+var shortOpts = {
+  "d": ["--database"],
+  "e": ["--encrypt"],
+  "h": ["--help"]
+};
+
+var error = function(msg) {
+  if (msg) console.error('ERROR: ' + msg);
+}
+
+var usage = function(code, msg) {
+  error(msg);
+  console.log('usage: ' + path.basename(process.argv[1]) +
+	      '[-h] [-e encrypt] -d database <file.json>');
+  process.exit(code);
+};
+
+var parsed = nopt(opts, shortOpts, process.argv, 2);
+
+if (parsed.help) usage(0);
+if (parsed.argv.remain.length < 1) usage(1, 'file required');
+if (!parsed.database) usage(1, 'database required');
+
+var file = parsed.argv.remain[0];
+
+var errored = false;
+var done = false;
+
+var dbOpts = {location: parsed.database, durable: false};
+if (parsed.encrypt !== undefined) dbOpts.encrypt = parsed.encrypt;
+var db = new Db(dbOpts);
+
+var shutdown = function(e) {
+  if (!errored) {
+    console.error(e.name + ': ' + e.message);
+  }
+  errored = true;
+}
+
+try {
+  db.openSync();
+
+  var finished = 0;
+  var objects = JSON.parse(fs.readFileSync(file, encoding='utf8'));
+
+  var addCallback = function(err) {
+    if (err) shutdown(err);
+    if(++finished >= objects.length) {
+      db.closeSync();
+      if (!errored) {
+	console.log('loaded ' + objects.length + ' records');
+	process.exit(0);
+      } else {
+	process.exit(1);
+      }
+    }
+  };
+
+  for (var i = 0; i < objects.length; i++) {
+    if (!errored) db.add(objects[i], addCallback);
+  }
+
+} catch(e) {
+  shutdown(e);
+}

@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+// -*- mode: js -*-
+var fs = require('fs');
+var nopt = require('nopt');
+var path = require('path');
+
+var Db = require('db');
+
+var opts = {
+  "database": String,
+  "encrypt": String,
+  "unique": Boolean,
+  "help": Boolean
+};
+
+var shortOpts = {
+  "d": ["--database"],
+  "e": ["--encrypt"],
+  "u": ["--unique"],
+  "h": ["--help"]
+};
+
+var error = function(msg) {
+  if (msg) console.error('ERROR: ' + msg);
+}
+
+var usage = function(code, msg) {
+  error(msg);
+  console.log('usage: ' + path.basename(process.argv[1]) +
+	      '[-hu] [-e encrypt] -d database attribute');
+  process.exit(code);
+};
+
+var parsed = nopt(opts, shortOpts, process.argv, 2);
+
+if (parsed.help) usage(0);
+if (parsed.argv.remain.length < 1) usage(1, 'attribute required');
+if (!parsed.database) usage(1, 'database required');
+
+var attribute = parsed.argv.remain[0];
+
+var dbOpts = {
+  location: parsed.database,
+  errorFile: '/dev/null'
+};
+if (parsed.encrypt !== undefined) dbOpts.encrypt = parsed.encrypt;
+var db = new Db(dbOpts);
+
+try {
+  db.openSync();
+  if (parsed.unique) {
+    db.ensureUniqueIndexSync({attr: attribute, create: true});
+  } else {
+    db.ensureIndexSync({attr: attribute, create: true});
+  }
+  db.closeSync();
+} catch(e) {
+  console.log(e.name + ': ' + e.message);
+  process.exit(1);
+}

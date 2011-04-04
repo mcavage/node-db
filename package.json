@@ -1,0 +1,32 @@
+{
+  "name": "db",
+  "description": "An embedded document-oriented database.",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mcavage/node-db.git"
+  },
+  "author": "Mark Cavage <mcavage@gmail.com> (http://www.bluesnoop.com)",
+  "main": "lib/db.js",
+  "scripts": {
+    "preinstall": "node-waf configure build",
+    "test": "node-waf test"
+  },
+  "bin": {
+    "ndb-create": "./tools/ndb-create",
+    "ndb-delete": "./tools/ndb-delete",
+    "ndb-index": "./tools/ndb-index",
+    "ndb-load": "./tools/ndb-load"
+  },
+  "dependencies": {
+    "bdb": ">=0.0.1",
+    "nopt": ">=1.0.1",
+    "node-uuid": ">=1.1.0"
+  },
+  "devDependencies": {
+    "jshint": ">=0.1.9"
+  },
+  "engines": {
+    "node": ">=0.4"
+  }
+}
