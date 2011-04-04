@@ -34,7 +34,7 @@ def configure(conf):
   o = Options.options
 
   os.chdir(jsonc_root)
-  args = ['./configure', '--disable-shared', '--enable-static']
+  args = ['./configure', '--disable-shared', '--enable-static', '--with-pic', '--with-gnu-ld']
 
   subprocess.check_call(args)
   conf.env.append_value('CPPPATH', jsonc_root)
@@ -71,9 +71,10 @@ def lint(ctx):
     subprocess.call(['jshint', os.path.join(dirname, f)])
 
 def build(bld):
+  obj = bld.new_task_gen('cxx', 'shlib', 'node_addon')
   os.chdir(jsonc_root)
   subprocess.check_call(['make', '-j', '3'])
-  subprocess.check_call(['ar', 'rcs', 'libjsonc.a',
+  subprocess.check_call(['ar', 'rcus', 'libjsonc.a',
                          'arraylist.o',
                          'debug.o',
                          'json_object.o',
@@ -82,9 +83,8 @@ def build(bld):
                          'linkhash.o',
                          'printbuf.o'])
   os.chdir(cwd)
-
-  obj = bld.new_task_gen('cxx', 'shlib', 'node_addon')
   obj.staticlib = "jsonc"
+
   obj.target = 'node_db_native'
   obj.source = './src/db_index.cc '
   obj.name = "node-db"
