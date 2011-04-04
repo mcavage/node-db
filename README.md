@@ -170,7 +170,7 @@ utilities.
 
 ## License
 
-All the bindings I'm putting out as MIT, but you *really* need to be aware of
+I'm putting this project under MIT, but you *really* need to be aware of
 the BDB license.  BDB is put out under a dual-license model: Sleepycat and
 commercial.  IANAL, but effectively the sleepycat license has a copy-left clause
 in it that makes any linking to BDB require your application to be open sourced
